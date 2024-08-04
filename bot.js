@@ -1,6 +1,6 @@
 require("dotenv").config()
 const TelegramBot = require('node-telegram-bot-api');
-const fetchNews = require('./newFetcher');
+const fetchNews = require('./newsFetcher');
 
 const token = process.env.TOKEN
 const bot = new TelegramBot(token, { polling: true });
