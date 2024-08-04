@@ -1,20 +1,54 @@
-require("dotenv").config()
+require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
-const fetchNews = require('./newsFetcher');
+const axios = require('axios');
+const xml2js = require('xml2js');
+const express = require('express');
+const bodyParser = require('body-parser');
 
-const token = process.env.TOKEN
-const bot = new TelegramBot(token, { polling: true });
+// Replace with your actual Telegram bot token
+const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const PORT = process.env.PORT || 3000;
+const WEBHOOK_URL = `https://telegram-bot-1-ieom.onrender.com/webhook`; 
+const bot = new TelegramBot(TOKEN);
+const app = express();
+const parser = new xml2js.Parser();
 
-bot.on('message', async (msg) => {
-  const chatId = msg.chat.id;
-  const newsItems = await fetchNews();
+// Set up the webhook
+bot.setWebHook(WEBHOOK_URL);
 
-  let response = 'Latest News from NDTV:\n\n';
-  newsItems.slice(0, 5).forEach((item, index) => {
-    response += `${index + 1}. ${item.title[0]}\n${item.link[0]}\n\n`;
-  });
+// Middleware
+app.use(bodyParser.json());
 
-  bot.sendMessage(chatId, response);
+app.get("/",(req,res)=>{
+  return res.end("From the server")
+})
+// Route to handle webhook requests
+app.post('/webhook', (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
 });
 
-console.log('Bot is running...');
+// Fetch latest news from NDTV RSS feed
+const fetchNews = async () => {
+  try {
+    const response = await axios.get('https://feeds.feedburner.com/ndtvnews-top-stories');
+    const result = await parser.parseStringPromise(response.data);
+    const latestNews = result.rss.channel[0].item[0];
+    return latestNews.title[0];
+  } catch (error) {
+    console.error('Error fetching news:', error);
+    return 'Error fetching news.';
+  }
+};
+
+// Handle incoming messages
+bot.onText(/\/news/, async (msg) => {
+  const chatId = msg.chat.id;
+  const news = await fetchNews();
+  bot.sendMessage(chatId, `Latest News: ${news}`);
+});
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
