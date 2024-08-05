@@ -1,16 +1,19 @@
-require("dotenv").config()
+require('dotenv').config();
+
+const express = require("express")
 const TelegramBot = require('node-telegram-bot-api');
 const fetchNews = require('./newsFetcher');
-const express = require("express")
 
 const app = express()
 const PORT = process.env.PORT || 8000
 
 const token = process.env.TOKEN
-const bot = new TelegramBot(token);
+const bot = new TelegramBot(token, { polling: true });
+
+const WEBHOOK_URL = `https://telegram-bot-4-vw7o.onrender.com/webhook`;
 
 app.get("/",(req,res)=>{
-  return res.end("From the bot")
+  return res.end("Bot is runing you can talk with it !!")
 })
 
 bot.on('message', async (msg) => {
@@ -27,8 +30,6 @@ bot.on('message', async (msg) => {
 
 console.log('Bot is running...');
 
-
-
 app.listen(PORT,()=>{
-  console.log(`Server is running at PORT ${PORT}`)
+  console.log("Server is running !!")
 })
